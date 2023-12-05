@@ -5,17 +5,18 @@ import fastifyCors from "@fastify/cors";
 import fastifyIO from "fastify-socket.io";
 import Redis from "ioredis";
 import closeWithGrace from "close-with-grace";
+import {subscribeMessage} from "./message";
 
 dotenv.config();
 
-const PORT = parseInt(process.env.PORT || "3001", 10);
-const HOST = process.env.HOST || "0.0.0.0";
-const CORS_ORIGIN = process.env.CORS_ORIGIN || "http://localhost:3000";
-const UPSTASH_REDIS_REST_URL = process.env.UPSTASH_REDIS_REST_URL || "";
+export const PORT = parseInt(process.env.PORT || "3001", 10);
+export const HOST = process.env.HOST || "0.0.0.0";
+export const CORS_ORIGIN = process.env.CORS_ORIGIN || "http://localhost:3000";
+export const UPSTASH_REDIS_REST_URL = process.env.UPSTASH_REDIS_REST_URL || "";
 
-const CONNECTION_COUNT_KEY = "chat:connection-count";
-const CONNECTION_COUNT_UPDATED_CHANNEL = "chat:connection-count-updated";
-const NEW_MESSAGE_CHANNEL = "chat:new-message";
+export const CONNECTION_COUNT_KEY = "chat:connection-count";
+export const CONNECTION_COUNT_UPDATED_CHANNEL = "chat:connection-count-updated";
+export const NEW_MESSAGE_CHANNEL = "chat:new-message";
 
 const publisher = new Redis(UPSTASH_REDIS_REST_URL);
 const subscriber = new Redis(UPSTASH_REDIS_REST_URL);
@@ -27,9 +28,9 @@ if (!UPSTASH_REDIS_REST_URL) {
   process.exit(1);
 }
 
-const buildServer = async () => {
-  const app = fastify();
+export const app = fastify();
 
+const buildServer = async () => {
   await app.register(fastifyCors, {
     origin: CORS_ORIGIN,
   });
@@ -75,6 +76,8 @@ const buildServer = async () => {
       `${count} clients subscribes to ${CONNECTION_COUNT_UPDATED_CHANNEL} channel`,
     );
   });
+
+  subscribeMessage(subscriber);
 
   app.get("/healthcheck", () => {
     return {
